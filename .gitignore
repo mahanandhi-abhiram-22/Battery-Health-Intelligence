@@ -1,0 +1,21 @@
+# Environments & Cache
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Large Data & Model Weights
+*.csv
+*.xlsx
+*.h5
+*.pkl
+*.pt
+*.pth
+dataset/
+models/
+
+# System / IDE
+.vscode/
+.idea/
+.DS_Store
