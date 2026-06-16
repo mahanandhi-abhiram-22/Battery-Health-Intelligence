@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Battery SOH & RUL — Prediction Results</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --sidebar-bg:#111827;
+      --sidebar-text:#e5e7eb;
+      --bg:#f3f4f6;
+      --card-bg:#ffffff;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --success:#059669;
+      --danger:#b91c1c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+    body{background:var(--bg);color:#111827;}
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{
+      width:230px;background:var(--sidebar-bg);color:var(--sidebar-text);
+      padding:18px 16px;display:flex;flex-direction:column;gap:20px;
+    }
+    .logo{font-size:16px;font-weight:600;margin-bottom:6px;}
+    .nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;}
+    .nav{list-style:none;margin-top:6px;}
+    .nav li{margin-bottom:6px;}
+    .nav a{
+      display:block;padding:8px 10px;border-radius:8px;
+      color:var(--sidebar-text);font-size:14px;text-decoration:none;
+    }
+    .nav a.active,.nav a:hover{background:#1f2937;}
+    .main{flex:1;display:flex;flex-direction:column;}
+    .topbar{
+      padding:14px 22px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;background:#f9fafb;
+    }
+    .topbar h1{font-size:20px;font-weight:600;}
+    .topbar small{font-size:12px;color:#6b7280;}
+    .content{padding:20px 24px;max-width:1100px;margin:0 auto;}
+    .card{
+      background:var(--card-bg);border-radius:14px;padding:18px 20px;
+      box-shadow:0 12px 30px rgba(15,23,42,.08);border:1px solid rgba(15,23,42,.04);
+      margin-bottom:18px;
+    }
+    .card h2{font-size:16px;font-weight:600;margin-bottom:10px;}
+    .muted{font-size:13px;color:#6b7280;margin-bottom:10px;}
+    .stat-grid{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:14px;}
+    .stat{
+      border-radius:12px;border:1px solid var(--border);padding:14px;
+    }
+    .stat label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-bottom:4px;}
+    .stat .val{font-size:22px;font-weight:700;}
+    .stat small{font-size:11px;color:#6b7280;}
+    .tag-good{color:var(--success);}
+    .tag-bad{color:var(--danger);}
+    pre{
+      background:#f9fafb;border-radius:10px;border:1px solid var(--border);
+      padding:10px;font-size:11px;max-height:260px;overflow:auto;
+    }
+    table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+    th,td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;}
+    th{font-weight:600;background:#f9fafb;}
+    footer{text-align:center;font-size:11px;color:#6b7280;margin-top:18px;}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="logo">Battery SOH &amp; RUL Prediction</div>
+      <div class="nav-title">Navigation</div>
+    </div>
+    <ul class="nav">
+      <li><a href="/dashboard">Home / Dashboard</a></li>
+      <li><a href="/battery-details">Battery Details</a></li>
+      <li><a href="/prediction-results" class="active">Prediction Results</a></li>
+      <li><a href="/dashboard#graphs">Graphs &amp; Trends</a></li>
+      <li><a href="#" onclick="alert('Describe your project here in the report.');return false;">About Project</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1>Prediction Results</h1>
+        <small>Latest model output with summary interpretation.</small>
+      </div>
+      <small id="timestamp"></small>
+    </header>
+
+    <main class="content">
+      <section class="card">
+        <h2>Latest Prediction Snapshot</h2>
+        <p class="muted">These values come directly from the Keras multi-output model deployed in the Flask API.</p>
+        <div class="stat-grid">
+          <div class="stat">
+            <label>SOH (State of Health)</label>
+            <div class="val"><span id="sohVal">—</span>%</div>
+            <small id="sohComment"></small>
+          </div>
+          <div class="stat">
+            <label>RUL (Years)</label>
+            <div class="val"><span id="rulVal">—</span></div>
+            <small id="rulComment"></small>
+          </div>
+          <div class="stat">
+            <label>RUL (Cycles)</label>
+            <div class="val"><span id="cyclesVal">—</span></div>
+            <small>Estimated cycles left before reaching end-of-life threshold.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Input Snapshot</h2>
+        <p class="muted">Inputs corresponding to this prediction (captured from the Predictor form).</p>
+        <table>
+          <tbody>
+            <tr><th>Voltage</th>     <td><span id="vIn">—</span> V</td></tr>
+            <tr><th>Current</th>     <td><span id="iIn">—</span> A</td></tr>
+            <tr><th>Temperature</th> <td><span id="tIn">—</span> °C</td></tr>
+            <tr><th>Cycle Count</th> <td><span id="cIn">—</span></td></tr>
+            <tr><th>Capacity</th>    <td><span id="capIn">—</span> Ah</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Raw JSON Response</h2>
+        <p class="muted">Full JSON returned by <code>/api/predict</code> (useful for debugging and documentation).</p>
+        <pre id="jsonBox">No prediction cached yet. Go to the Predictor page, run a prediction, then refresh this page.</pre>
+      </section>
+
+      <footer>
+        Developed by [Your Team Name] · EV Battery Health Estimator
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const now = new Date();
+$("timestamp").textContent = "Viewed at: " + now.toLocaleString();
+
+(function loadPrediction(){
+  try{
+    const inpRaw  = localStorage.getItem("predict_inputs");
+    const predRaw = localStorage.getItem("last_prediction");
+    if(!predRaw){
+      return;
+    }
+    const pred = JSON.parse(predRaw);
+    const inp  = inpRaw ? JSON.parse(inpRaw) : {};
+
+    const soh = pred.SOH;
+    const sohPct = (soh <= 1.2 ? soh*100 : soh); // handle 0–1 scale
+    const rulYears  = pred.RUL;
+    const rulCycles = pred.RUL_Cycles;
+
+    $("sohVal").textContent    = sohPct.toFixed(1);
+    $("rulVal").textContent    = rulYears.toFixed(2);
+    $("cyclesVal").textContent = rulCycles.toFixed(0);
+
+    // Simple interpretation
+    if(sohPct < 70){
+      $("sohComment").textContent = "Battery is in late-life region. Replacement planning recommended.";
+      $("sohComment").className   = "tag-bad";
+    }else if(sohPct < 85){
+      $("sohComment").textContent = "Mid-life stage with noticeable degradation.";
+      $("sohComment").className   = "tag-bad";
+    }else{
+      $("sohComment").textContent = "SOH is within healthy range.";
+      $("sohComment").className   = "tag-good";
+    }
+
+    if(rulYears < 1){
+      $("rulComment").textContent = "Less than one year of life remaining at current usage.";
+      $("rulComment").className   = "tag-bad";
+    }else if(rulYears < 3){
+      $("rulComment").textContent = "Moderate remaining life. Usage optimisation can extend RUL.";
+    }else{
+      $("rulComment").textContent = "Comfortable remaining life window.";
+      $("rulComment").className   = "tag-good";
+    }
+
+    // inputs
+    $("vIn").textContent   = inp.voltage ?? "—";
+    $("iIn").textContent   = inp.current ?? "—";
+    $("tIn").textContent   = inp.temperature ?? "—";
+    $("cIn").textContent   = inp.cycle_count ?? "—";
+    $("capIn").textContent = inp.capacity ?? "—";
+
+    $("jsonBox").textContent = JSON.stringify(pred, null, 2);
+  }catch(e){
+    console.warn(e);
+  }
+})();
+</script>
+</body>
+</html>

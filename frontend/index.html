@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>EV Battery - Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>EV Battery Dashboard</h1>
+      <p class="muted">Training & parity plots + quick inference</p>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <h3>Training Loss</h3>
+        <img id="trainingImg" alt="Training loss" src="" />
+      </div>
+      <div class="card">
+        <h3>Parity Grid</h3>
+        <img id="parityImg" alt="Parity grid" src="" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Quick Inference</h3>
+      <form id="quickForm">
+        <div class="row">
+          <label>Voltage<input name="voltage" type="number" step="any" value="3.7" /></label>
+          <label>Current<input name="current" type="number" step="any" value="1.0" /></label>
+        </div>
+        <div class="row">
+          <label>Temperature<input name="temperature" type="number" step="any" value="25" /></label>
+          <label>Cycle count<input name="cycle" type="number" step="1" value="100" /></label>
+        </div>
+        <div class="row">
+          <label>Capacity<input name="capacity" type="number" step="any" value="1.0" /></label>
+        </div>
+        <button type="submit">Predict</button>
+      </form>
+      <div id="quickResult" class="result"></div>
+    </section>
+
+    <footer>
+      <a href="inference.html">Open full Inference page →</a>
+    </footer>
+  </div>
+
+<script>
+/*
+  By default this static frontend assumes your Flask app is at:
+    http://127.0.0.1:8000
+  If your Flask host/port is different, change API_BASE here.
+*/
+const API_BASE = (function(){
+  // convenience: if opened from file:// use localhost; if served from other host adjust manually
+  return 'http://127.0.0.1:8000';
+})();
+
+document.getElementById('trainingImg').src = API_BASE + '/api/results/plot/training';
+document.getElementById('parityImg').src   = API_BASE + '/api/results/plot/parity_grid';
+
+document.getElementById('quickForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    voltage: parseFloat(f.voltage.value || 0),
+    current: parseFloat(f.current.value || 0),
+    temperature: parseFloat(f.temperature.value || 25),
+    cycle: parseFloat(f.cycle.value || 0),
+    capacity: parseFloat(f.capacity.value || 1.0),
+    battery_type: "Li-ion"   // locked to Li-ion as you requested
+  };
+  const resultDiv = document.getElementById('quickResult');
+  resultDiv.textContent = 'Predicting...';
+  try {
+    const resp = await fetch(API_BASE + '/api/predict', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const j = await resp.json();
+    if (resp.ok) {
+      resultDiv.innerHTML = '<pre>' + JSON.stringify(j, null, 2) + '</pre>';
+    } else {
+      resultDiv.innerHTML = '<div class="error">Error: ' + (j.error || JSON.stringify(j)) + '</div>';
+    }
+  } catch(err) {
+    resultDiv.innerHTML = '<div class="error">Network error: ' + err.message + '</div>';
+  }
+});
+</script>
+</body>
+</html>

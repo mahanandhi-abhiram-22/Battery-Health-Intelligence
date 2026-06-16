@@ -1,21 +1,18 @@
-# Environments & Cache
-venv/
+# Python
 .venv/
-env/
+.venv312/
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Large Data & Model Weights
-*.csv
-*.xlsx
-*.h5
-*.pkl
-*.pt
-*.pth
-dataset/
-models/
+# Environment
+.env
 
-# System / IDE
+# VS Code
 .vscode/
-.idea/
-.DS_Store
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+
+# Logs
+*.log

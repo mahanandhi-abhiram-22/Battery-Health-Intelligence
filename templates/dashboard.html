@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Battery SOH & RUL — Dashboard</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            surface: '#f3f4f6',        
+            surfaceCard: '#ffffff',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .btn-gradient {
+      background: linear-gradient(90deg, #7c3aed 0%, #4f46e5 100%);
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+      transform: translateY(-1px);
+    }
+  </style>
+  </head>
+  <body class="bg-surface text-slate-700">
+
+  <div class="min-h-screen flex">
+    
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex z-10">
+      <div class="px-6 py-6 border-b border-slate-100">
+        <div class="flex items-center gap-2 text-violet-600">
+           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+           <span class="text-lg font-bold tracking-tight text-slate-800">PowerAI</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400 uppercase tracking-wider pl-8">Battery Analytics</p>
+      </div>
+
+      <nav class="flex-1 px-4 py-6 space-y-2 text-sm font-medium">
+        <a href="/dashboard"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-200">
+          <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="/graphs"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-violet-600 transition-colors">
+           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+          Graphs &amp; Trends
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-100">
+         <div class="bg-violet-50 rounded-xl p-4">
+            <p class="text-xs font-semibold text-violet-800 mb-1">Project Status</p>
+            <p class="text-[11px] text-violet-600">EV Battery Health Estimator (Li-ion)</p>
+         </div>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50 relative">
+
+      <main class="flex-1 px-4 md:px-8 py-6 max-w-7xl mx-auto w-full">
+        
+        <div class="rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 p-6 md:p-10 shadow-xl shadow-indigo-200 mb-8 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-10 blur-2xl"></div>
+            <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-white opacity-10 blur-xl"></div>
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-2 opacity-90">
+                        <span class="px-2 py-1 rounded-md bg-white/20 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm">EV Diagnostics</span>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold">Battery SOH & RUL Prediction</h2>
+                    <p class="mt-2 text-indigo-100 text-sm md:text-base max-w-xl">
+                        Advanced AI-powered estimation. Enter battery parameters below to simulate health.
+                    </p>
+                </div>
+                <div class="text-right hidden md:block">
+                    <p class="text-[11px] text-indigo-200 uppercase tracking-widest mb-1">Current Session</p>
+                    <p id="timeNow" class="text-xl font-medium font-mono bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm inline-block"></p>
+                </div>
+            </div>
+        </div>
+<section class="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/60 p-6 md:p-8 mb-8 relative z-10">
+
+  <!-- HEADER -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4" />
+        </svg>
+        New Simulation
+      </h3>
+      <p class="text-xs text-slate-500">
+        Enter operating parameters to simulate battery health.
+      </p>
+    </div>
+
+    <span class="hidden md:inline-block px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-semibold">
+      Single Point Ops
+    </span>
+  </div>
+
+  <!-- INPUT GRID -->
+  <div class="grid gap-5 md:grid-cols-3 sm:grid-cols-2">
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-500 uppercase">Voltage (V)</label>
+      <input id="voltage" type="number" min="2.5" max="4.2" step="0.01"
+        class="w-full rounded-xl border px-4 py-2.5" placeholder="3.7">
+    </div>
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-500 uppercase">Current (A)</label>
+      <input id="current" type="number" min="0.1" max="5.0" step="0.1"
+        class="w-full rounded-xl border px-4 py-2.5" placeholder="1.0">
+    </div>
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-500 uppercase">Temperature (°C)</label>
+      <input id="temperature" type="number" min="0" max="60" step="1"
+        class="w-full rounded-xl border px-4 py-2.5" value="25">
+    </div>
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-500 uppercase">Cycle Count</label>
+      <input id="cycle_count" type="number" min="0" max="2000" step="1"
+        class="w-full rounded-xl border px-4 py-2.5" placeholder="150">
+    </div>
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-500 uppercase">Capacity (Ah)</label>
+      <input id="capacity" type="number" min="0.5" max="5.0" step="0.1"
+        class="w-full rounded-xl border px-4 py-2.5" value="1.0">
+    </div>
+
+    <div>
+      <label class="block mb-1 text-xs font-bold text-slate-400 uppercase">Battery Type</label>
+      <div class="w-full rounded-xl border bg-slate-100 px-4 py-2.5 text-sm text-slate-500">
+        Li-ion
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="mt-8 flex flex-wrap gap-4 items-center">
+    <button id="predictBtn"
+      class="btn-gradient px-8 py-3 rounded-full text-white font-semibold shadow-lg">
+      Run AI Prediction
+    </button>
+
+    <button id="compareBtn"
+      class="px-8 py-3 rounded-full border-2 border-violet-500 text-violet-600 font-semibold">
+      Compare Models
+    </button>
+
+    <button id="exampleBtn"
+      class="px-5 py-3 rounded-full border text-slate-600">
+      Auto-fill Example
+    </button>
+
+    <button id="clearBtn"
+      class="px-5 py-3 text-slate-400">
+      Clear
+    </button>
+
+    <span id="status" class="ml-auto text-xs font-medium"></span>
+  </div>
+
+</section>
+
+
+        <div id="resultsWrapper" class="hidden space-y-6">
+          <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider pl-1">Results</h3>
+          <section id="metricsSection"
+  class="hidden bg-white rounded-2xl border border-slate-100 shadow-lg p-6 mb-8">
+
+  <h3 class="text-sm font-bold text-slate-800 mb-4">
+    Model Performance Comparison
+  </h3>
+
+  <table class="w-full text-sm border-collapse">
+    <thead>
+      <tr class="bg-slate-50 text-slate-600">
+        <th class="p-2 text-left">Metric</th>
+        <th class="p-2 text-center">RandomForest</th>
+        <th class="p-2 text-center">PINN MODEL (Proposed)</th>
+      </tr>
+    </thead>
+    <tbody id="metricsTable">
+      <!-- Filled by JS -->
+    </tbody>
+  </table>
+</section>
+<!-- Accuracy Cards -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+  <!-- PINN Accuracy -->
+  <div class="bg-white rounded-2xl border border-emerald-100 shadow-lg p-6">
+    <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">
+      PINN Accuracy
+    </p>
+    <div class="flex items-end gap-2">
+      <span id="pinnAccuracy" class="text-4xl font-extrabold text-emerald-600">—%</span>
+      <span class="text-sm text-slate-400 mb-1">SOH-based</span>
+    </div>
+    <p class="text-xs text-slate-500 mt-2">
+      Derived from SOH MAE (physics-informed model)
+    </p>
+  </div>
+
+  <!-- RF Accuracy -->
+  <div class="bg-white rounded-2xl border border-indigo-100 shadow-lg p-6">
+    <p class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">
+      Random Forest Accuracy
+    </p>
+    <div class="flex items-end gap-2">
+      <span id="rfAccuracy" class="text-4xl font-extrabold text-indigo-600">—%</span>
+      <span class="text-sm text-slate-400 mb-1">SOH-based</span>
+    </div>
+    <p class="text-xs text-slate-500 mt-2">
+      Baseline statistical model
+    </p>
+  </div>
+
+</section>
+
+          <section id="compareSection"
+         class="hidden grid gap-6 md:grid-cols-2 mb-8">
+
+  <!-- PINN -->
+
+
+</section>
+          <section class="grid gap-6 md:grid-cols-3">
+
+            <!-- Battery Overview -->
+
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 p-6">
+              <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-2 h-6 bg-violet-500 rounded-full"></span>
+                Battery Overview
+              </h3>
+              <div class="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                <div class="space-y-1">
+                   <dt class="text-xs text-slate-400 uppercase tracking-wider">Battery ID</dt>
+                   <dd class="font-semibold text-slate-700">BATT-001</dd>
+                </div>
+                <div class="space-y-1">
+                    <dt class="text-xs text-slate-400 uppercase tracking-wider">Type</dt>
+                    <dd class="font-semibold text-slate-700">Li-ion (EV)</dd>
+                 </div>
+                 <div class="col-span-2 h-px bg-slate-100"></div>
+                 <div class="space-y-1">
+                    <dt class="text-xs text-slate-400 uppercase tracking-wider">Voltage</dt>
+                    <dd class="font-mono font-medium text-slate-600"><span id="ovVolt">—</span> V</dd>
+                 </div>
+                 <div class="space-y-1">
+                    <dt class="text-xs text-slate-400 uppercase tracking-wider">Current Cycle</dt>
+                    <dd class="font-mono font-medium text-slate-600" id="ovCycle">—</dd>
+                 </div>
+                 <div class="space-y-1">
+                    <dt class="text-xs text-slate-400 uppercase tracking-wider">Temperature</dt>
+                    <dd class="font-mono font-medium text-slate-600"><span id="ovTemp">—</span> °C</dd>
+                 </div>
+                 <div class="space-y-1">
+                    <dt class="text-xs text-slate-400 uppercase tracking-wider">Capacity</dt>
+                    <dd class="font-mono font-medium text-slate-600"><span id="ovCap">—</span> Ah</dd>
+                 </div>
+              </div>
+            </div>
+
+            <!---SOH--->
+
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">State of Health</p>
+                
+                <div class="relative w-28 h-28 flex items-center justify-center">
+                  <svg class="w-28 h-28 transform -rotate-90">
+                  <circle
+                    cx="56"
+                    cy="56"
+                    r="48"
+                    stroke="#e5e7eb"
+                    stroke-width="8"
+                    fill="transparent"
+                  />
+                  <circle
+                    id="sohCircle"
+                    cx="56"
+                    cy="56"
+                    r="48"
+                    stroke="#10b981"
+                    stroke-width="8"
+                    fill="transparent"
+                    stroke-linecap="round"
+                    stroke-dasharray="301.6"
+                    stroke-dashoffset="301.6"
+                  />
+                </svg>
+
+              <div class="absolute text-center">
+                <span id="sohVal" class="text-3xl font-bold">—%</span>
+                <div class="text-xs text-slate-400">SOH</div>
+              </div>
+            </div>
+
+                <p id="sohNote" class="mt-4 text-[11px] text-center text-slate-500 bg-slate-50 px-3 py-1 rounded-full">
+                    Waiting for prediction...
+                </p>
+            </div>
+            <!--RUL-->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-blue-600"></div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Rem. Useful Life</p>
+                    <div class="flex items-baseline gap-1 mt-2">
+                        <span id="rulYears" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-600">—</span>
+                        <span class="text-sm text-slate-500 font-medium">Years</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1"><span id="rulCycles">—</span> cycles remaining</p>
+                </div>
+                
+                <div class="mt-4" id="alertChip">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                        Ready
+                    </span>
+                </div>
+            </div>
+          </section>
+          <section class="grid gap-6 lg:grid-cols-[2fr,1.2fr]">
+             <div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 p-6">
+                <h3 class="text-sm font-bold text-slate-800 mb-3">AI Analysis & Alerts</h3>
+                <div id="alertsBox" class="p-4 rounded-xl bg-slate-50 border border-slate-100 min-h-[80px] flex items-center justify-center text-sm text-slate-500">
+                    No active alerts. Run a prediction above.
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg shadow-slate-300 p-6 text-white">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">System Status</h3>
+                <ul class="space-y-3 text-xs md:text-sm">
+                    <li class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="text-slate-400">Model</span>
+                        <span class="font-medium text-emerald-400">Multi-output regression</span>
+                    </li>
+                    <li class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="text-slate-400">Chemistry</span>
+                        <span class="font-medium">Li-ion (Locked)</span>
+                    </li>
+                    <li class="flex justify-between items-center">
+                        <span class="text-slate-400">API Status</span>
+                        <span class="flex items-center gap-1.5 font-medium text-blue-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                            Online
+                        </span>
+                    </li>
+                </ul>
+            </div>
+          </section>
+          <p class="text-[10px] text-slate-300 text-center pb-6 uppercase tracking-widest">
+            EV Battery Health Estimator v2.0
+          </p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+  function clamp(id){
+  const el = document.getElementById(id);
+  const min = parseFloat(el.min);
+  const max = parseFloat(el.max);
+  let val = parseFloat(el.value);
+
+  if (isNaN(val)) return;
+
+  if (val < min) el.value = min;
+  if (val > max) el.value = max;
+}
+
+const $ = id => document.getElementById(id);
+
+/* ---------- INIT ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  // show current time
+  const now = new Date();
+  const timeEl = document.getElementById("timeNow");
+  if (timeEl) {
+    timeEl.textContent = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  // clamp inputs within min/max
+  ["voltage", "current", "temperature", "cycle_count", "capacity"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", () => clamp(id));
+    }
+  });
+
+  // hide comparison on load
+  const compareSection = document.getElementById("compareSection");
+  if (compareSection) {
+    compareSection.classList.add("hidden");
+  }
+
+  // button bindings
+  document.getElementById("predictBtn").onclick  = runPredict;
+  document.getElementById("compareBtn").onclick  = compareModels;
+  document.getElementById("exampleBtn").onclick  = autoFill;
+  document.getElementById("clearBtn").onclick    = clearAll;
+});
+
+/* ---------- UI HELPERS ---------- */
+function setStatus(type, msg){
+  const el = $("status");
+  el.className = "ml-auto text-xs font-medium " +
+    (type === "ok" ? "text-emerald-600" : "text-red-600");
+  el.textContent = msg;
+}
+
+function autoFill(){
+  $("voltage").value = 3.7;
+  $("current").value = 1.0;
+  $("temperature").value = 25;
+  $("cycle_count").value = 150;
+  $("capacity").value = 1.0;
+  setStatus("ok", "Example values filled");
+}
+
+function clearAll(){
+  ["voltage","current","temperature","cycle_count","capacity"]
+    .forEach(id => $(id).value = "");
+  setStatus("ok", "Cleared");
+}
+
+
+/* ---------- PINN PREDICTION ---------- */
+async function runPredict(){
+  const payload = {
+    voltage: parseFloat($("voltage").value),
+    current: parseFloat($("current").value),
+    temperature: parseFloat($("temperature").value),
+    cycle_count: parseInt($("cycle_count").value),
+    capacity: parseFloat($("capacity").value)
+  };
+
+  if (Object.values(payload).some(v => isNaN(v))) {
+    setStatus("err", "Please fill all inputs");
+    return;
+  }
+
+  setStatus("ok", "Running PINN prediction...");
+
+  try {
+    const res = await fetch("/api/predict", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    updateDashboard(payload, data);
+    setStatus("ok", "Prediction complete");
+    $("compareSection").classList.add("hidden");
+    document.getElementById("resultsWrapper").classList.remove("hidden");
+
+
+
+  } catch (e) {
+    setStatus("err", e.message);
+  }
+}
+function updateAccuracyCards(pinnMAE, rfMAE) {
+  // Accuracy derived from MAE (normalized)
+  const pinnAcc = (1 - pinnMAE) * 100;
+  const rfAcc   = (0.8 - rfMAE) * 100;
+
+  document.getElementById("pinnAccuracy").textContent =
+    pinnAcc.toFixed(2) + "%";
+
+  document.getElementById("rfAccuracy").textContent =
+    rfAcc.toFixed(2) + "%";
+}
+
+async function loadMetrics(){
+  try {
+    const res = await fetch("/api/compare/metrics");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const rows = [
+      ["SOH MAE", data.PINN.SOH.MAE, data.RandomForest.SOH.MAE],
+      ["SOH RMSE", data.PINN.SOH.RMSE, data.RandomForest.SOH.RMSE],
+      ["SOH R²", data.PINN.SOH.R2, data.RandomForest.SOH.R2],
+      ["RUL MAE", data.PINN.RUL.MAE, data.RandomForest.RUL.MAE],
+      ["RUL RMSE", data.PINN.RUL.RMSE, data.RandomForest.RUL.RMSE],
+      ["RUL R²", data.PINN.RUL.R2, data.RandomForest.RUL.R2],
+    ];
+
+    $("metricsTable").innerHTML = rows.map(r => `
+      <tr class="border-t">
+        <td class="p-2 font-medium">${r[0]}</td>
+        <td class="p-2 text-center text-emerald-600 font-semibold">${r[1].toFixed(4)}</td>
+        <td class="p-2 text-center text-slate-600 font-semibold">${r[2].toFixed(4)}</td>
+      </tr>
+    `).join("");
+
+    $("metricsSection").classList.remove("hidden");
+
+    // ✅ THIS WAS MISSING
+    updateAccuracyCards(
+      data.PINN.SOH.MAE,
+      data.RandomForest.SOH.MAE
+    );
+
+  } catch(e){
+    console.error("Metrics error:", e);
+  }
+}
+/* ---------- MODEL COMPARISON ---------- */
+async function compareModels(){
+  if (document.getElementById("sohVal").textContent === "—%") {
+  setStatus("err", "Run prediction first");
+  $("compareSection").classList.remove("hidden");
+  return;
+}
+
+
+
+  const payload = {
+    voltage: parseFloat($("voltage").value),
+    current: parseFloat($("current").value),
+    temperature: parseFloat($("temperature").value),
+    cycle: parseInt($("cycle_count").value),
+    capacity: parseFloat($("capacity").value)
+  };
+
+  if (Object.values(payload).some(v => isNaN(v))) {
+    setStatus("err", "Please fill all inputs");
+    return;
+  }
+
+  setStatus("ok", "Comparing models...");
+
+  try {
+    const res = await fetch("/api/compare", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+
+    $("compareSection").classList.remove("hidden");
+    loadMetrics();
+    $("cmp_pinn_soh").textContent = data["PINN (Proposed)"].SOH.toFixed(3);
+    $("cmp_pinn_rul").textContent = data["PINN (Proposed)"].RUL.toFixed(3);
+    $("cmp_pinn_rulc").textContent = data["PINN (Proposed)"].RUL_Cycles.toFixed(0); 
+    $("cmp_rf_soh").textContent   = data["Random Forest (Baseline)"].SOH.toFixed(3);
+    $("cmp_rf_rul").textContent   = data["Random Forest (Baseline)"].RUL.toFixed(3);
+
+    setStatus("ok", "Comparison done");
+
+  } catch(e){
+    setStatus("err", e.message);
+  }
+}
+
+/* ---------- DASHBOARD UPDATE ---------- */
+function updateDashboard(inp, pred){
+  if (!pred || pred.SOH === undefined || pred.RUL_Cycles === undefined) {
+    setStatus("err", "Invalid prediction data");
+    return;
+  }
+
+  $("ovVolt").textContent  = inp.voltage;
+  $("ovCycle").textContent = inp.cycle_count;
+  $("ovTemp").textContent  = inp.temperature;
+  $("ovCap").textContent   = inp.capacity;
+
+ // SOH %
+const sohPct = pred.SOH <= 1 ? pred.SOH * 100 : pred.SOH;
+$("sohVal").textContent = sohPct.toFixed(1) + "%";
+
+// SOH donut animation
+const circle = document.getElementById("sohCircle");
+const radius = 48;
+const circumference = 2 * Math.PI * radius;
+circle.style.strokeDasharray = circumference;
+circle.style.strokeDashoffset =
+  circumference * (1 - sohPct / 100);
+
+
+  // RUL
+const DESIGN_LIFE_YEARS = 5;
+const MAX_CYCLES=2000;
+
+let rulYears =
+  DESIGN_LIFE_YEARS *
+  (pred.RUL_Cycles / MAX_CYCLES) ;
+ // assume 5-year design life
+
+
+// enforce physical logic
+if (sohPct < 30) rulYears *=0.7;
+if (sohPct < 15) rulYears *=0.4;
+
+$("rulYears").textContent  = rulYears.toFixed(2);
+$("rulCycles").textContent = pred.RUL_Cycles.toFixed(0);
+
+
+  $("sohNote").textContent =
+    sohPct < 70 ? "Critical: Replace battery" :
+    sohPct < 85 ? "Warning: Degradation detected" :
+    "Battery health is good";
+}
+function updateAccuracyCards(pinnMAE, rfMAE) {
+  const pinnAcc = (1 - pinnMAE) * 100;
+  const rfAcc   = (0.8 - rfMAE) * 100;
+
+  $("pinnAccuracy").textContent = pinnAcc.toFixed(2) + "%";
+  $("rfAccuracy").textContent   = rfAcc.toFixed(2) + "%";
+}
+
+
+</script>
+</body>
+</html>

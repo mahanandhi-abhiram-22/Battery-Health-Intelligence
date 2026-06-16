@@ -1,0 +1,26 @@
+{
+  "training_date": "2025-10-14T14:25:30.030192",
+  "input_features": 17,
+  "training_samples": 729,
+  "test_samples": 183,
+  "model_architecture": "PINN with Physics Constraints",
+  "features": [
+    "voltage",
+    "current",
+    "temperature",
+    "cycle",
+    "battery_type_encoded",
+    "capacity",
+    "power",
+    "voltage_per_capacity",
+    "current_density",
+    "temp_deviation",
+    "cycle_normalized",
+    "sqrt_cycle",
+    "voltage_temp",
+    "current_temp",
+    "voltage_cycle",
+    "current_cycle",
+    "temp_cycle"
+  ]
+}

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EV Battery Health — Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: '#2563eb' }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js (ONLY load here, do NOT create chart here) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-900 text-white">
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Top bar -->
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold">EV Battery Health — Predictor</h1>
+        <p class="text-sm text-slate-500">Multi-output model for SOH, RUL (years) and RUL (cycles)</p>
+      </div>
+      <nav class="flex gap-4 text-sm">
+        <a class="text-brand hover:underline" href="/training">Training</a>
+        <a class="text-brand hover:underline" href="/dashboard">Dashboard</a>
+      </nav>
+    </header>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Input card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-lg font-medium mb-4">Input (Li-ion only)</h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium">Voltage (V)</label>
+            <input id="voltage" type="number" step="0.01"
+                   class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                   placeholder="e.g., 3.7">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Current (A)</label>
+            <input id="current" type="number" step="0.01"
+                   class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                   placeholder="e.g., 1.2">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Temperature (°C)</label>
+            <input id="temperature" type="number" step="0.1"
+                   class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                   value="25">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Cycle Count</label>
+            <input id="cycle_count" type="number"
+                   class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                   placeholder="e.g., 150">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Capacity (Ah)</label>
+            <input id="capacity" type="number" step="0.01"
+                   class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                   value="1.0">
+          </div>
+
+          <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+            <div>
+              <p class="text-xs font-medium text-blue-900 uppercase tracking-wide">Battery Type</p>
+              <p class="text-blue-800 text-sm">Li-ion (fixed)</p>
+            </div>
+            <span class="px-2 py-1 text-[11px] rounded bg-blue-100 text-blue-800">Locked</span>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button id="predictBtn"
+                    class="px-4 py-2 rounded-xl bg-brand text-white hover:bg-blue-600 text-sm font-medium">
+              Predict
+            </button>
+            <button id="fillExample"
+                    class="px-4 py-2 rounded-xl border border-slate-200 text-sm hover:bg-slate-50">
+              Fill example
+            </button>
+            <button id="clearAll"
+                    class="px-4 py-2 rounded-xl border border-slate-200 text-sm hover:bg-slate-50">
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+      
+
+      <!-- Output card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-lg font-medium mb-4">Results</h2>
+
+        <div id="status"
+             class="hidden mb-3 px-3 py-2 rounded-md text-sm"></div>
+
+      <div id="cards" class="grid sm:grid-cols-3 gap-4 mb-4">
+      <div class="bg-slate-800 rounded-xl p-4 shadow-lg">
+        <p class="text-xs text-slate-400 uppercase mb-1">SOH</p>
+        <p id="soh" class="text-3xl font-bold text-green-400">—</p>
+      </div>
+
+      <div class="bg-slate-800 rounded-xl p-4 shadow-lg">
+        <p class="text-xs text-slate-400 uppercase mb-1">RUL (years)</p>
+        <p id="rul" class="text-3xl font-bold text-blue-400">—</p>
+      </div>
+
+      <div class="bg-slate-800 rounded-xl p-4 shadow-lg">
+        <p class="text-xs text-slate-400 uppercase mb-1">RUL (cycles)</p>
+        <p id="rulc" class="text-3xl font-bold text-purple-400">—</p>
+      </div>
+
+    </div>
+    <div class="bg-slate-800 rounded-2xl p-6 mt-6 shadow-lg">
+  <h2 class="text-lg font-semibold mb-4 text-white">Battery Degradation</h2>
+  <canvas id="sohChart"></canvas>
+</div>
+<div id="insight" class="mt-4 text-center text-sm text-gray-300"></div>
+
+        <label class="block text-sm font-medium mb-1">Raw JSON</label>
+        <textarea id="jsonOut" rows="8"
+                  class="w-full rounded-lg border px-3 py-2 text-xs font-mono bg-slate-50"
+                  readonly></textarea>
+
+        <div class="flex flex-wrap gap-3 mt-3">
+          <button id="copyJson"
+                  class="px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50">
+            Copy
+          </button>
+          <a href="/training"
+             class="px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50">
+            Train model
+          </a>
+          <a href="/dashboard"
+             class="px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50">
+            View dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let chart;
+function saveInputs() {
+  const data = {
+    voltage: +$("voltage").value || "",
+    current: +$("current").value || "",
+    temperature: +$("temperature").value || "",
+    cycle_count: +$("cycle_count").value || "",
+    capacity: +$("capacity").value || ""
+  };
+  localStorage.setItem("predict_inputs", JSON.stringify(data));
+}
+
+function loadInputs() {
+  const raw = localStorage.getItem("predict_inputs");
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    $("voltage").value     = d.voltage ?? "";
+    $("current").value     = d.current ?? "";
+    $("temperature").value = d.temperature ?? 25;
+    $("cycle_count").value = d.cycle_count ?? "";
+    $("capacity").value    = d.capacity ?? 1.0;
+  } catch {}
+}
+function animateValue(id, start, end, duration) {
+  let range = end - start;
+  let current = start;
+  let increment = end > start ? 1 : -1;
+  let stepTime = Math.max(10, Math.abs(Math.floor(duration / range)));
+
+  let timer = setInterval(() => {
+    current += increment;
+    document.getElementById(id).textContent = current.toFixed(2);
+
+    if (current >= end) {
+      clearInterval(timer);
+      document.getElementById(id).textContent = end.toFixed(2);
+    }
+  }, stepTime);
+}
+function setStatus(type, msg) {
+  const el = $("status");
+  el.classList.remove("hidden","bg-green-50","text-green-800","bg-red-50","text-red-800");
+  if (type === "ok") el.classList.add("bg-green-50","text-green-800");
+  else el.classList.add("bg-red-50","text-red-800");
+  el.textContent = msg;
+}
+
+async function predict() {
+  setStatus("ok", "Analyzing battery data...");
+  const payload = {
+    voltage:     parseFloat($("voltage").value),
+    current:     parseFloat($("current").value),
+    temperature: parseFloat($("temperature").value),
+    cycle_count: parseInt($("cycle_count").value),
+    capacity:    parseFloat($("capacity").value),
+    battery_type: "Li-ion"
+  };
+  
+  for (const [k,v] of Object.entries(payload)) {
+    if (k === "battery_type") continue;
+    if (Number.isNaN(v)) {
+      setStatus("err", `Missing/invalid: ${k}`);
+      return;
+    }
+  }
+
+  try {
+    const res = await fetch("/api/predict", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    let insight = "";
+
+if (data.SOH > 0.85) {
+  insight = "Battery is in excellent condition ✅";
+} else if (data.SOH > 0.7) {
+  insight = "Battery shows moderate degradation ⚠️";
+} else {
+  insight = "Battery health is critical ❌ Replace soon";
+}
+
+document.getElementById("insight").innerHTML =
+  `<span class="text-cyan-400">${insight}</span>`;
+    if (!res.ok) throw new Error(data.error || "Prediction failed");
+    chart.data.labels.push(data.cycle_count || chart.data.labels.length);
+    chart.data.datasets[0].data.push(data.SOH);
+    chart.update();
+    if (data.SOH > 0.85) {
+        $("soh").className = "text-3xl font-bold text-green-400";
+      } else if (data.SOH > 0.7) {
+        $("soh").className = "text-3xl font-bold text-yellow-400";
+      } else {
+        $("soh").className = "text-3xl font-bold text-red-400";
+      }
+    animateValue("soh", 0, data.SOH, 800);
+    animateValue("rul", 0, data.RUL, 800);
+    animateValue("rulc", 0, data.RUL_Cycles, 800);
+    $("jsonOut").value    = JSON.stringify(data, null, 2);
+    setStatus("ok", "Prediction complete.");
+    saveInputs();
+  } catch (e) {
+    $("jsonOut").value = "";
+    setStatus("err", e.message);
+  }
+}
+
+$("predictBtn").addEventListener("click", predict);
+$("fillExample").addEventListener("click", () => {
+  $("voltage").value = 3.70;
+  $("current").value = 1.10;
+  $("temperature").value = 25.0;
+  $("cycle_count").value = 150;
+  $("capacity").value = 1.0;
+});
+$("clearAll").addEventListener("click", () => {
+  ["voltage","current","temperature","cycle_count","capacity"].forEach(id => $(id).value = "");
+  $("jsonOut").value = "";
+  $("soh").textContent = $("rul").textContent = $("rulc").textContent = "—";
+  setStatus("ok", "Cleared.");
+});
+$("copyJson").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("jsonOut").value); setStatus("ok","Copied."); } catch {}
+});
+loadInputs();
+</script>
+<script>
+window.onload = function () {
+  const ctx = document.getElementById("sohChart");
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "SOH",
+        data: [],
+        borderColor: "#38bdf8",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { labels: { color: "white" } }
+      },
+      scales: {
+        x: { ticks: { color: "white" } },
+        y: { ticks: { color: "white" } }
+      }
+    }
+  });
+};
+</script>
+</body>
+</html>

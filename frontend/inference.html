@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>EV Battery - Inference</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Inference</h1>
+      <p class="muted">Submit inputs to get SOH, RUL and RUL_Cycles</p>
+    </header>
+
+    <section class="card">
+      <form id="inferForm" class="form-grid">
+        <label>Voltage<input name="voltage" type="number" step="any" value="3.7" /></label>
+        <label>Current<input name="current" type="number" step="any" value="1.0" /></label>
+        <label>Temperature<input name="temperature" type="number" step="any" value="25" /></label>
+        <label>Cycle count<input name="cycle" type="number" step="1" value="100" /></label>
+        <label>Capacity<input name="capacity" type="number" step="any" value="1.0" /></label>
+        <div class="full"><button type="submit">Run Inference</button></div>
+      </form>
+      <div id="resultBox" class="result"></div>
+    </section>
+
+    <footer><a href="index.html">← Back to Dashboard</a></footer>
+  </div>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8000';
+
+document.getElementById('inferForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    voltage: parseFloat(f.voltage.value || 0),
+    current: parseFloat(f.current.value || 0),
+    temperature: parseFloat(f.temperature.value || 25),
+    cycle: parseFloat(f.cycle.value || 0),
+    capacity: parseFloat(f.capacity.value || 1.0),
+    battery_type: "Li-ion"
+  };
+  const box = document.getElementById('resultBox');
+  box.textContent = 'Predicting...';
+  try {
+    const r = await fetch(API_BASE + '/api/predict', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if (r.ok) {
+      box.innerHTML = '<pre>' + JSON.stringify(j, null, 2) + '</pre>';
+    } else {
+      box.innerHTML = '<div class="error">Error: ' + (j.error || JSON.stringify(j)) + '</div>';
+    }
+  } catch(err) {
+    box.innerHTML = '<div class="error">Network error: ' + err.message + '</div>';
+  }
+});
+</script>
+</body>
+</html>

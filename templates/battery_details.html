@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Battery SOH & RUL — Battery Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --sidebar-bg:#111827;
+      --sidebar-text:#e5e7eb;
+      --bg:#f3f4f6;
+      --card-bg:#ffffff;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+    body{background:var(--bg);color:#111827;}
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{
+      width:230px;background:var(--sidebar-bg);color:var(--sidebar-text);
+      padding:18px 16px;display:flex;flex-direction:column;gap:20px;
+    }
+    .logo{font-size:16px;font-weight:600;margin-bottom:6px;}
+    .nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;}
+    .nav{list-style:none;margin-top:6px;}
+    .nav li{margin-bottom:6px;}
+    .nav a{
+      display:block;padding:8px 10px;border-radius:8px;
+      color:var(--sidebar-text);font-size:14px;text-decoration:none;
+    }
+    .nav a.active,.nav a:hover{background:#1f2937;}
+    .main{flex:1;display:flex;flex-direction:column;}
+    .topbar{
+      padding:14px 22px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;background:#f9fafb;
+    }
+    .topbar h1{font-size:20px;font-weight:600;}
+    .topbar small{font-size:12px;color:#6b7280;}
+    .content{padding:20px 24px;max-width:1100px;margin:0 auto;}
+    .card{
+      background:var(--card-bg);border-radius:14px;padding:18px 20px;
+      box-shadow:0 12px 30px rgba(15,23,42,.08);border:1px solid rgba(15,23,42,.04);
+      margin-bottom:18px;
+    }
+    .card h2{font-size:16px;font-weight:600;margin-bottom:10px;}
+    .muted{font-size:13px;color:#6b7280;margin-bottom:10px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+    th,td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;}
+    th{font-weight:600;background:#f9fafb;}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 8px;border-radius:999px;font-size:11px;
+      background:#e0f2fe;color:#0369a1;
+    }
+    .grid2{display:grid;grid-template-columns:1.4fr 1.1fr;gap:16px;}
+    footer{text-align:center;font-size:11px;color:#6b7280;margin-top:18px;}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="logo">Battery SOH &amp; RUL Prediction</div>
+      <div class="nav-title">Navigation</div>
+    </div>
+    <ul class="nav">
+      <li><a href="/dashboard">Home / Dashboard</a></li>
+      <li><a href="/battery-details" class="active">Battery Details</a></li>
+      <li><a href="/prediction-results">Prediction Results</a></li>
+      <li><a href="/dashboard#graphs">Graphs &amp; Trends</a></li>
+      <li><a href="#" onclick="alert('Describe your project here in the report.');return false;">About Project</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1>Battery Details</h1>
+        <small>Static information + last measured operating point.</small>
+      </div>
+      <small id="updatedAt"></small>
+    </header>
+
+    <main class="content">
+      <section class="card">
+        <h2>Battery Identification</h2>
+        <p class="muted">Information about the current EV battery under monitoring.</p>
+        <table>
+          <tbody>
+            <tr><th>Battery ID</th>      <td>BATT-001</td></tr>
+            <tr><th>Battery Type</th>    <td>Li-ion (EV Battery)</td></tr>
+            <tr><th>Application</th>     <td>Electric Vehicle (Pack-level estimation)</td></tr>
+            <tr><th>Chemistry</th>      <td>NMC / Li-ion (assumed)</td></tr>
+            <tr><th>Data Source</th>     <td>Synthetic NASA-style cycle data generated for training</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="grid2">
+        <div class="card">
+          <h2>Last Operating Point</h2>
+          <p class="muted">Latest input values sent to the model from the Predictor screen.</p>
+          <table>
+            <tbody>
+              <tr><th>Cycle Count</th>   <td><span id="cycleCell">—</span></td></tr>
+              <tr><th>Voltage</th>       <td><span id="voltCell">—</span> V</td></tr>
+              <tr><th>Current</th>       <td><span id="currCell">—</span> A</td></tr>
+              <tr><th>Temperature</th>   <td><span id="tempCell">—</span> °C</td></tr>
+              <tr><th>Capacity</th>      <td><span id="capCell">—</span> Ah</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2>Operating Conditions</h2>
+          <p class="muted">Quick qualitative view of how “stressful” the last operating condition is.</p>
+          <table>
+            <tbody>
+              <tr>
+                <th>Thermal Zone</th>
+                <td><span id="tempZone" class="pill">Normal</span></td>
+              </tr>
+              <tr>
+                <th>Current Load</th>
+                <td><span id="currZone" class="pill">Nominal</span></td>
+              </tr>
+              <tr>
+                <th>Usage Comment</th>
+                <td id="usageComment">Awaiting latest prediction…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        Developed by [Your Team Name] · EV Battery Health Estimator
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// timestamp
+const now = new Date();
+$("updatedAt").textContent = "Last opened: " + now.toLocaleString();
+
+// load last inputs + prediction
+(function loadDetails(){
+  try{
+    const inpRaw  = localStorage.getItem("predict_inputs");
+    const predRaw = localStorage.getItem("last_prediction");
+    if(!inpRaw){ return; }
+
+    const inp  = JSON.parse(inpRaw);
+    const pred = predRaw ? JSON.parse(predRaw) : null;
+
+    $("cycleCell").textContent = inp.cycle_count ?? "—";
+    $("voltCell").textContent  = inp.voltage ?? "—";
+    $("currCell").textContent  = inp.current ?? "—";
+    $("tempCell").textContent  = inp.temperature ?? "—";
+    $("capCell").textContent   = inp.capacity ?? "—";
+
+    // Simple qualitative zones:
+    const T = Number(inp.temperature);
+    const I = Number(inp.current);
+
+    if(!Number.isNaN(T)){
+      let label="Normal", bg="#dcfce7", fg="#166534";
+      if(T > 40){ label="Hot"; bg="#fee2e2"; fg="#b91c1c"; }
+      else if(T < 10){ label="Cold"; bg="#e0f2fe"; fg="#0369a1"; }
+      $("tempZone").textContent = label;
+      $("tempZone").style.background = bg;
+      $("tempZone").style.color = fg;
+    }
+    if(!Number.isNaN(I)){
+      let label="Nominal", bg="#e0f2fe", fg="#0369a1";
+      if(I > 1.5){ label="High Load"; bg="#fee2e2"; fg="#b91c1c"; }
+      else if(I < 0.3){ label="Light Load"; bg="#fef9c3"; fg="#854d0e"; }
+      $("currZone").textContent = label;
+      $("currZone").style.background = bg;
+      $("currZone").style.color = fg;
+    }
+
+    if(pred){
+      const sohPct = (pred.SOH <= 1.2 ? pred.SOH*100 : pred.SOH); // handle 0–1 vs %
+      if(sohPct < 70){
+        $("usageComment").textContent = "Battery is ageing; avoid aggressive fast-charging and high temperatures.";
+      }else if(sohPct < 85){
+        $("usageComment").textContent = "Battery is in mid-life stage; normal usage is fine with periodic monitoring.";
+      }else{
+        $("usageComment").textContent = "Battery is healthy; current operating point is acceptable.";
+      }
+    }
+  }catch(e){
+    console.warn(e);
+  }
+})();
+</script>
+</body>
+</html>
